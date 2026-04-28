@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management Dashboard</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pyidaungsu:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+        }
+        body { font-family: 'Inter', 'Pyidaungsu', sans-serif; background-color: var(--bg); margin: 0; color: #333; }
+        
+        /* Auth Screen */
+        .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .auth-box { background: white; padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 350px; text-align: center; }
+        
+        /* Main Layout */
+        .dashboard { display: none; padding: 20px; max-width: 1200px; margin: auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        
+        /* Form & Cards */
+        .card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+        .section-title { grid-column: 1 / -1; font-weight: 600; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        
+        /* Inputs & Buttons */
+        input, select, textarea { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 5px rgba(67, 97, 238, 0.2); }
+        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--secondary); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 1px solid #ddd; }
+        
+        /* Search & Table */
+        .search-bar { width: 100%; max-width: 400px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f1f3f5; font-weight: 600; }
+        tr:hover { background: #fcfcfc; }
+        .action-btns button { margin-right: 5px; padding: 5px 10px; font-size: 12px; }
+
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div id="authDiv" class="auth-overlay">
+    <div class="auth-box">
+        <h2 style="color: var(--primary);">SMS Admin</h2>
+        <p>Login to manage students</p>
+        <input type="email" id="loginEmail" placeholder="Email Address">
+        <input type="password" id="loginPassword" placeholder="Password">
+        <button class="btn btn-primary" style="width: 100%; margin-top: 15px;" onclick="login()">Sign In</button>
+    </div>
+</div>
+
+<div id="appDiv" class="dashboard">
+    <header>
+        <h2 style="margin: 0; color: var(--primary);">Student Management System</h2>
+        <button class="btn btn-outline" onclick="logout()">Logout</button>
+    </header>
+
+    <div class="card">
+        <h3 id="formTitle">ကျောင်းသားအသစ် စာရင်းသွင်းရန်</h3>
+        <form id="studentForm">
+            <input type="hidden" id="editKey"> <div class="grid">
+                <div class="section-title">ကိုယ်ရေးအချက်အလက်</div>
+                <input type="text" id="name" placeholder="အမည်" required>
+                <input type="date" id="dob" required>
+                <input type="number" id="age" placeholder="အသက်">
+                <input type="text" id="sid" placeholder="ကျောင်းဝင်အမှတ်" required>
+                <input type="text" id="nrc" placeholder="မှတ်ပုံတင်အမှတ်">
+                <select id="blood">
+                    <option value="">သွေးအုပ်စု</option>
+                    <option value="A">A</option><option value="B">B</option><option value="O">O</option><option value="AB">AB</option>
+                </select>
+
+                <div class="section-title">မိဘအချက်အလက်</div>
+                <input type="text" id="fName" placeholder="အဘအမည်">
+                <input type="text" id="fNrc" placeholder="အဘမှတ်ပုံတင်အမှတ်">
+                <input type="text" id="fEdu" placeholder="အဘပညာအရည်အချင်း">
+                <input type="text" id="fJob" placeholder="အဘအလုပ်အကိုင်">
+                <input type="text" id="mName" placeholder="အမိအမည်">
+                <input type="text" id="mNrc" placeholder="အမိမှတ်ပုံတင်အမှတ်">
+                <input type="text" id="mEdu" placeholder="အမိပညာအရည်အချင်း">
+                <input type="text" id="mJob" placeholder="အမိအလုပ်အကိုင်">
+
+                <div class="section-title">ဆက်သွယ်ရန်</div>
+                <input type="text" id="phone" placeholder="ဖုန်းနံပါတ်" required>
+                <textarea id="address" style="grid-column: 1/-1;" placeholder="နေရပ်လိပ်စာ"></textarea>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button type="submit" id="saveBtn" class="btn btn-primary">စာရင်းသိမ်းဆည်းမည်</button>
+                <button type="button" id="cancelBtn" class="btn btn-outline" style="display:none;" onclick="resetForm()">မလုပ်တော့ပါ</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>ကျောင်းသားစာရင်း</h3>
+        <input type="text" id="searchInput" class="search-bar" placeholder="အမည် သို့မဟုတ် ကျောင်းဝင်အမှတ်ဖြင့် ရှာရန်..." onkeyup="searchTable()">
+        <div style="overflow-x: auto;">
+            <table id="studentTable">
+                <thead>
+                    <tr>
+                        <th>အမည်</th>
+                        <th>ကျောင်းဝင်အမှတ်</th>
+                        <th>ဖုန်းနံပါတ်</th>
+                        <th>လုပ်ဆောင်ချက်</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Firebase Config - Replace with your own!
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database().ref("students");
+
+    // Functions
+    function login() {
+        const e = document.getElementById('loginEmail').value;
+        const p = document.getElementById('loginPassword').value;
+        auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
+    }
+    function logout() { auth.signOut(); }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById('authDiv').style.display = 'none';
+            document.getElementById('appDiv').style.display = 'block';
+            loadData();
+        } else {
+            document.getElementById('authDiv').style.display = 'flex';
+            document.getElementById('appDiv').style.display = 'none';
+        }
+    });
+
+    // Save or Update Data
+    document.getElementById('studentForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const key = document.getElementById('editKey').value;
+        const data = {
+            name: document.getElementById('name').value,
+            dob: document.getElementById('dob').value,
+            age: document.getElementById('age').value,
+            sid: document.getElementById('sid').value,
+            nrc: document.getElementById('nrc').value,
+            blood: document.getElementById('blood').value,
+            fName: document.getElementById('fName').value,
+            fNrc: document.getElementById('fNrc').value,
+            fEdu: document.getElementById('fEdu').value,
+            fJob: document.getElementById('fJob').value,
+            mName: document.getElementById('mName').value,
+            mNrc: document.getElementById('mNrc').value,
+            mEdu: document.getElementById('mEdu').value,
+            mJob: document.getElementById('mJob').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value
+        };
+
+        if (key) {
+            db.child(key).update(data).then(() => { alert("Update အောင်မြင်ပါသည်"); resetForm(); });
+        } else {
+            db.push(data).then(() => { alert("သိမ်းဆည်းပြီးပါပြီ"); resetForm(); });
+        }
+    });
+
+    function loadData() {
+        db.on("value", snapshot => {
+            const tbody = document.getElementById('tbody');
+            tbody.innerHTML = "";
+            snapshot.forEach(child => {
+                const val = child.val();
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${val.name}</td>
+                        <td>${val.sid}</td>
+                        <td>${val.phone}</td>
+                        <td class="action-btns">
+                            <button class="btn btn-outline" onclick="editData('${child.key}')">Edit</button>
+                            <button class="btn btn-danger" onclick="deleteData('${child.key}')">Delete</button>
+                        </td>
+                    </tr>`;
+            });
+        });
+    }
+
+    function editData(key) {
+        db.child(key).once("value", snapshot => {
+            const val = snapshot.val();
+            document.getElementById('editKey').value = key;
+            document.getElementById('name').value = val.name;
+            document.getElementById('dob').value = val.dob;
+            document.getElementById('age').value = val.age;
+            document.getElementById('sid').value = val.sid;
+            document.getElementById('nrc').value = val.nrc;
+            document.getElementById('blood').value = val.blood;
+            document.getElementById('fName').value = val.fName;
+            document.getElementById('fNrc').value = val.fNrc;
+            document.getElementById('fEdu').value = val.fEdu;
+            document.getElementById('fJob').value = val.fJob;
+            document.getElementById('mName').value = val.mName;
+            document.getElementById('mNrc').value = val.mNrc;
+            document.getElementById('mEdu').value = val.mEdu;
+            document.getElementById('mJob').value = val.mJob;
+            document.getElementById('phone').value = val.phone;
+            document.getElementById('address').value = val.address;
+
+            document.getElementById('formTitle').innerText = "စာရင်းပြင်ဆင်ရန်";
+            document.getElementById('saveBtn').innerText = "Update လုပ်မည်";
+            document.getElementById('cancelBtn').style.display = "inline-block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    function resetForm() {
+        document.getElementById('studentForm').reset();
+        document.getElementById('editKey').value = "";
+        document.getElementById('formTitle').innerText = "ကျောင်းသားအသစ် စာရင်းသွင်းရန်";
+        document.getElementById('saveBtn').innerText = "စာရင်းသိမ်းဆည်းမည်";
+        document.getElementById('cancelBtn').style.display = "none";
+    }
+
+    function deleteData(key) {
+        if(confirm("ဖျက်မှာ သေချာပါသလား?")) db.child(key).remove();
+    }
+
+    function searchTable() {
+        let input = document.getElementById("searchInput").value.toUpperCase();
+        let tr = document.getElementById("studentTable").getElementsByTagName("tr");
+        for (let i = 1; i < tr.length; i++) {
+            let tdName = tr[i].getElementsByTagName("td")[0];
+            let tdID = tr[i].getElementsByTagName("td")[1];
+            if (tdName || tdID) {
+                let txtValue = (tdName.textContent || tdName.innerText) + (tdID.textContent || tdID.innerText);
+                tr[i].style.display = txtValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
