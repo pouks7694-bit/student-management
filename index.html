@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Management Dashboard</title>
+    <title>Advanced Student Management Dashboard</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -27,29 +27,27 @@
         .dashboard { display: none; padding: 20px; max-width: 1200px; margin: auto; }
         header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         
-        /* Form & Cards */
         .card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
         .section-title { grid-column: 1 / -1; font-weight: 600; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 5px; margin-top: 15px; }
         
-        /* Inputs & Buttons */
         input, select, textarea { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; transition: 0.3s; width: 100%; box-sizing: border-box; }
         input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 5px rgba(67, 97, 238, 0.2); }
-        .btn { padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 13px; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-primary:hover { background: var(--secondary); }
+        .btn-success { background: #2ec4b6; color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-outline { background: transparent; border: 1px solid #ddd; }
         
-        /* Search & Table */
-        .search-bar { width: 100%; max-width: 400px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
         th { background: #f1f3f5; font-weight: 600; }
-        tr:hover { background: #fcfcfc; }
-        .action-btns button { margin-right: 5px; padding: 5px 10px; font-size: 12px; }
+        .action-btns { display: flex; gap: 5px; }
 
-        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        @media print {
+            .auth-overlay, header, .card:first-of-type, .search-bar, .action-btns, .btn { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #eee; }
+        }
     </style>
 </head>
 <body>
@@ -57,9 +55,8 @@
 <div id="authDiv" class="auth-overlay">
     <div class="auth-box">
         <h2 style="color: var(--primary);">SMS Admin</h2>
-        <p>Login to manage students</p>
         <input type="email" id="loginEmail" placeholder="Email Address">
-        <input type="password" id="loginPassword" placeholder="Password">
+        <input type="password" id="loginPassword" placeholder="Password" style="margin-top:10px;">
         <button class="btn btn-primary" style="width: 100%; margin-top: 15px;" onclick="login()">Sign In</button>
     </div>
 </div>
@@ -73,30 +70,23 @@
     <div class="card">
         <h3 id="formTitle">ကျောင်းသားအသစ် စာရင်းသွင်းရန်</h3>
         <form id="studentForm">
-            <input type="hidden" id="editKey"> <div class="grid">
+            <input type="hidden" id="editKey"> 
+            <div class="grid">
                 <div class="section-title">ကိုယ်ရေးအချက်အလက်</div>
                 <input type="text" id="name" placeholder="အမည်" required>
-                <input type="date" id="dob" required>
-                <input type="number" id="age" placeholder="အသက်">
                 <input type="text" id="sid" placeholder="ကျောင်းဝင်အမှတ်" required>
-                <input type="text" id="nrc" placeholder="မှတ်ပုံတင်အမှတ်">
-                <select id="blood">
-                    <option value="">သွေးအုပ်စု</option>
-                    <option value="A">A</option><option value="B">B</option><option value="O">O</option><option value="AB">AB</option>
-                </select>
+                <input type="date" id="dob" required title="မွေးသက္ကရာဇ်">
+                <input type="text" id="phone" placeholder="ဖုန်းနံပါတ်" required>
+
+                <div class="section-title">ကျောင်းခေါ်ချိန် နှင့် လခ (Attendance & Fees)</div>
+                <input type="number" id="attDays" placeholder="တက်ရောက်ရက် (ဥပမာ-၂၀)" title="Days Present">
+                <input type="number" id="totalDays" placeholder="စုစုပေါင်းရက် (ဥပမာ-၂၅)" title="Total School Days">
+                <input type="number" id="totalFees" placeholder="သင်တန်းကြေး စုစုပေါင်း">
+                <input type="number" id="paidFees" placeholder="ပေးသွင်းပြီးငွေ">
 
                 <div class="section-title">မိဘအချက်အလက်</div>
                 <input type="text" id="fName" placeholder="အဘအမည်">
-                <input type="text" id="fNrc" placeholder="အဘမှတ်ပုံတင်အမှတ်">
-                <input type="text" id="fEdu" placeholder="အဘပညာအရည်အချင်း">
-                <input type="text" id="fJob" placeholder="အဘအလုပ်အကိုင်">
                 <input type="text" id="mName" placeholder="အမိအမည်">
-                <input type="text" id="mNrc" placeholder="အမိမှတ်ပုံတင်အမှတ်">
-                <input type="text" id="mEdu" placeholder="အမိပညာအရည်အချင်း">
-                <input type="text" id="mJob" placeholder="အမိအလုပ်အကိုင်">
-
-                <div class="section-title">ဆက်သွယ်ရန်</div>
-                <input type="text" id="phone" placeholder="ဖုန်းနံပါတ်" required>
                 <textarea id="address" style="grid-column: 1/-1;" placeholder="နေရပ်လိပ်စာ"></textarea>
             </div>
             <div style="margin-top: 20px; display: flex; gap: 10px;">
@@ -114,8 +104,9 @@
                 <thead>
                     <tr>
                         <th>အမည်</th>
-                        <th>ကျောင်းဝင်အမှတ်</th>
-                        <th>ဖုန်းနံပါတ်</th>
+                        <th>ID</th>
+                        <th>ခေါ်ချိန် %</th>
+                        <th>လခ အခြေအနေ</th>
                         <th>လုပ်ဆောင်ချက်</th>
                     </tr>
                 </thead>
@@ -126,23 +117,21 @@
 </div>
 
 <script>
-    // Firebase Config - Replace with your own!
-const firebaseConfig = {
-  apiKey: "AIzaSyCdfXfRetGH8s97rLpOQFgd0tR4lmuE_aw",
-  authDomain: "student-s-info-b2ea5.firebaseapp.com",
-  databaseURL: "https://student-s-info-b2ea5-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "student-s-info-b2ea5",
-  storageBucket: "student-s-info-b2ea5.firebasestorage.app",
-  messagingSenderId: "380488638908",
-  appId: "1:380488638908:web:2eb911c55904ee1cfdcbb9",
-  measurementId: "G-WZB6R29G1C"
-};
+    // Replace with your actual Firebase config
+    const firebaseConfig = {
+        apiKey: "AIzaSyCdfXfRetGH8s97rLpOQFgd0tR4lmuE_aw",
+        authDomain: "student-s-info-b2ea5.firebaseapp.com",
+        databaseURL: "https://student-s-info-b2ea5-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "student-s-info-b2ea5",
+        storageBucket: "student-s-info-b2ea5.firebasestorage.app",
+        messagingSenderId: "380488638908",
+        appId: "1:380488638908:web:2eb911c55904ee1cfdcbb9"
+    };
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.database().ref("students");
 
-    // Functions
     function login() {
         const e = document.getElementById('loginEmail').value;
         const p = document.getElementById('loginPassword').value;
@@ -161,33 +150,27 @@ const firebaseConfig = {
         }
     });
 
-    // Save or Update Data
     document.getElementById('studentForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const key = document.getElementById('editKey').value;
         const data = {
             name: document.getElementById('name').value,
-            dob: document.getElementById('dob').value,
-            age: document.getElementById('age').value,
             sid: document.getElementById('sid').value,
-            nrc: document.getElementById('nrc').value,
-            blood: document.getElementById('blood').value,
-            fName: document.getElementById('fName').value,
-            fNrc: document.getElementById('fNrc').value,
-            fEdu: document.getElementById('fEdu').value,
-            fJob: document.getElementById('fJob').value,
-            mName: document.getElementById('mName').value,
-            mNrc: document.getElementById('mNrc').value,
-            mEdu: document.getElementById('mEdu').value,
-            mJob: document.getElementById('mJob').value,
+            dob: document.getElementById('dob').value,
             phone: document.getElementById('phone').value,
+            attDays: document.getElementById('attDays').value || 0,
+            totalDays: document.getElementById('totalDays').value || 0,
+            totalFees: document.getElementById('totalFees').value || 0,
+            paidFees: document.getElementById('paidFees').value || 0,
+            fName: document.getElementById('fName').value,
+            mName: document.getElementById('mName').value,
             address: document.getElementById('address').value
         };
 
         if (key) {
-            db.child(key).update(data).then(() => { alert("Update အောင်မြင်ပါသည်"); resetForm(); });
+            db.child(key).update(data).then(() => { alert("Updated!"); resetForm(); });
         } else {
-            db.push(data).then(() => { alert("သိမ်းဆည်းပြီးပါပြီ"); resetForm(); });
+            db.push(data).then(() => { alert("Saved!"); resetForm(); });
         }
     });
 
@@ -197,14 +180,24 @@ const firebaseConfig = {
             tbody.innerHTML = "";
             snapshot.forEach(child => {
                 const val = child.val();
+                
+                // Calculate Attendance %
+                const attPercent = val.totalDays > 0 ? Math.round((val.attDays / val.totalDays) * 100) : 0;
+                
+                // Calculate Fee Balance
+                const balance = val.totalFees - val.paidFees;
+                const feeStatus = balance <= 0 ? '<span style="color:green">Paid</span>' : `<span style="color:red">-${balance}</span>`;
+
                 tbody.innerHTML += `
                     <tr>
                         <td>${val.name}</td>
                         <td>${val.sid}</td>
-                        <td>${val.phone}</td>
+                        <td><b>${attPercent}%</b></td>
+                        <td>${feeStatus}</td>
                         <td class="action-btns">
                             <button class="btn btn-outline" onclick="editData('${child.key}')">Edit</button>
-                            <button class="btn btn-danger" onclick="deleteData('${child.key}')">Delete</button>
+                            <button class="btn btn-success" onclick="printDetails('${child.key}')">Print</button>
+                            <button class="btn btn-danger" onclick="deleteData('${child.key}')">Del</button>
                         </td>
                     </tr>`;
             });
@@ -216,26 +209,72 @@ const firebaseConfig = {
             const val = snapshot.val();
             document.getElementById('editKey').value = key;
             document.getElementById('name').value = val.name;
-            document.getElementById('dob').value = val.dob;
-            document.getElementById('age').value = val.age;
             document.getElementById('sid').value = val.sid;
-            document.getElementById('nrc').value = val.nrc;
-            document.getElementById('blood').value = val.blood;
-            document.getElementById('fName').value = val.fName;
-            document.getElementById('fNrc').value = val.fNrc;
-            document.getElementById('fEdu').value = val.fEdu;
-            document.getElementById('fJob').value = val.fJob;
-            document.getElementById('mName').value = val.mName;
-            document.getElementById('mNrc').value = val.mNrc;
-            document.getElementById('mEdu').value = val.mEdu;
-            document.getElementById('mJob').value = val.mJob;
+            document.getElementById('dob').value = val.dob;
             document.getElementById('phone').value = val.phone;
+            document.getElementById('attDays').value = val.attDays;
+            document.getElementById('totalDays').value = val.totalDays;
+            document.getElementById('totalFees').value = val.totalFees;
+            document.getElementById('paidFees').value = val.paidFees;
+            document.getElementById('fName').value = val.fName;
+            document.getElementById('mName').value = val.mName;
             document.getElementById('address').value = val.address;
 
-            document.getElementById('formTitle').innerText = "စာရင်းပြင်ဆင်ရန်";
-            document.getElementById('saveBtn').innerText = "Update လုပ်မည်";
+            document.getElementById('formTitle').innerText = "ပြင်ဆင်ရန်";
+            document.getElementById('saveBtn').innerText = "Update";
             document.getElementById('cancelBtn').style.display = "inline-block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
+    function printDetails(key) {
+        db.child(key).once("value", snapshot => {
+            const val = snapshot.val();
+            const attPercent = val.totalDays > 0 ? Math.round((val.attDays / val.totalDays) * 100) : 0;
+            
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head><title>Student Profile - ${val.name}</title>
+                <style>
+                    body { font-family: 'Pyidaungsu', sans-serif; padding: 40px; line-height: 1.6; }
+                    .header { text-align: center; border-bottom: 2px solid #333; margin-bottom: 20px; }
+                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                    .box { border: 1px solid #ddd; padding: 15px; border-radius: 8px; }
+                    h2 { color: #4361ee; }
+                </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>ကျောင်းသား ကိုယ်ရေးမှတ်တမ်း</h1>
+                        <p>Student ID: ${val.sid}</p>
+                    </div>
+                    <div class="info-grid">
+                        <div class="box">
+                            <h3>ကိုယ်ရေးအချက်အလက်</h3>
+                            <p><b>အမည်:</b> ${val.name}</p>
+                            <p><b>မွေးသက္ကရာဇ်:</b> ${val.dob}</p>
+                            <p><b>ဖုန်း:</b> ${val.phone}</p>
+                            <p><b>နေရပ်လိပ်စာ:</b> ${val.address}</p>
+                        </div>
+                        <div class="box">
+                            <h3>ပညာရေးနှင့် ငွေစာရင်း</h3>
+                            <p><b>တက်ရောက်မှု:</b> ${val.attDays}/${val.totalDays} (${attPercent}%)</p>
+                            <p><b>သင်တန်းကြေး စုစုပေါင်း:</b> ${val.totalFees}</p>
+                            <p><b>ပေးသွင်းပြီး:</b> ${val.paidFees}</p>
+                            <p><b>ကျန်ငွေ:</b> ${val.totalFees - val.paidFees}</p>
+                        </div>
+                    </div>
+                    <div class="box" style="margin-top:20px;">
+                        <h3>မိဘအချက်အလက်</h3>
+                        <p><b>အဘအမည်:</b> ${val.fName}</p>
+                        <p><b>အမိအမည်:</b> ${val.mName}</p>
+                    </div>
+                    <script>window.print();<\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         });
     }
 
@@ -248,22 +287,19 @@ const firebaseConfig = {
     }
 
     function deleteData(key) {
-        if(confirm("ဖျက်မှာ သေချာပါသလား?")) db.child(key).remove();
+        if(confirm("Are you sure?")) db.child(key).remove();
     }
 
     function searchTable() {
         let input = document.getElementById("searchInput").value.toUpperCase();
         let tr = document.getElementById("studentTable").getElementsByTagName("tr");
         for (let i = 1; i < tr.length; i++) {
-            let tdName = tr[i].getElementsByTagName("td")[0];
-            let tdID = tr[i].getElementsByTagName("td")[1];
-            if (tdName || tdID) {
-                let txtValue = (tdName.textContent || tdName.innerText) + (tdID.textContent || tdID.innerText);
-                tr[i].style.display = txtValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
-            }
+            let txt = tr[i].innerText.toUpperCase();
+            tr[i].style.display = txt.indexOf(input) > -1 ? "" : "none";
         }
     }
 </script>
 
 </body>
+</html>
 </html>
